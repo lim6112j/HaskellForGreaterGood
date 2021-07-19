@@ -1,10 +1,11 @@
-{-# LANGUAGE FlexibleContexts #-}
 module Main where
 
 import Lib
 import Data.Monoid
-
-
+import qualified Control.Monad.State as S
+import System.Random
+import Control.Monad.Error
+import Control.Applicative
 isBigGang :: Int -> (Bool, String)
 isBigGang = \x -> (x > 9, " is Big Gang")
 applyLog :: (a, String) -> (a -> (b, String)) -> (b, String)
@@ -132,6 +133,60 @@ stackStuff = do
     else do
       push 3
       push 8
+pop' :: S.State Stack Int
+pop' = S.state $ \(x:xs) -> (x, xs)
+push' :: Int -> S.State Stack ()
+push' a = S.state $ \xs -> ((), a:xs)
+stackManip' :: S.State Stack Int
+stackManip' = do
+  push' 3
+  a <- pop'
+  pop'
+stackStuff' :: S.State Stack ()
+stackStuff' = do
+  a <- pop'
+  if a == 5
+    then push' 5
+    else do
+     push' 3
+     push' 8
+moreStack :: S.State Stack ()
+moreStack = do
+  a <- stackManip'
+  if a == 100
+    then stackStuff'
+    else return ()
+-- system random
+randomSt :: (RandomGen g, Random a) => S.State g a
+randomSt = S.state random
+threeCoins :: S.State StdGen (Bool,Bool,Bool)
+threeCoins = do
+  a <- randomSt
+  b <- randomSt
+  c <- randomSt
+  return (a, b, c)
+keepSmall :: Int -> Writer [String] Bool
+keepSmall x
+  | x < 4 = do
+      tell ["Keeping " ++ show x]
+      return True
+  | otherwise = do
+      tell [show x ++ " is too large, throwing it away"]
+      return False
+
+powerset :: [a] -> [[a]]
+powerset xs = filterM (\x->[True, False]) xs
+binSmalls :: Int -> Int -> Maybe Int
+binSmalls acc x
+  | x > 9 = Nothing
+  | otherwise = Just (acc + x)
+f = foldr (.) id [(+1), (*100), (+3)]
+f2 = foldl (.) id [(+3), (*100), (+1)]
+
+--S.runState threeCoins (mkStdGen 33)
+
+-- Error handling
+
 main :: IO ()
 main = mapM_ putStrLn $ snd $ runWriter (gcd'' 8 3)
 --main = mapM_ putStrLn . fromDiffList . snd . runWriter $ finalCountDown 500000

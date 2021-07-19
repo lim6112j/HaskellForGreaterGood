@@ -1,0 +1,71 @@
+
+./Setup.hs,15
+main main1,2
+
+./app/Main.hs,1774
+module Main Main0,1
+isBigGang isBigGang7,8
+applyLog applyLog9,10
+applyLogM applyLogM11,12
+type Food Food13,14
+type Price Price14,15
+addDrink addDrink15,16
+newtype Writer Writer19,20
+newtype Writer w a = Writer { runWriter runWriter19,20
+instance (M(Monoid w) => Functor (Writer w)20,21
+  fmap fmap21,22
+instance (M(Monoid w) => Applicative (Writer w)22,23
+  pure pure23,24
+  Writer Writer24,25
+instance (M(Monoid w) => Monad (Writer w)25,26
+  return return26,27
+  (W(Writer(a,w)27,28
+logNumber logNumber28,29
+tell tell30,31
+multWithLog multWithLog33,34
+gcd' gcd'39,40
+gcd'' gcd''43,44
+newtype DiffList DiffList53,54
+newtype DiffList a = DiffList { getDiffList getDiffList53,54
+instance Monoid Monoid (DiffList a)54,55
+  mempty mempty55,56
+  (DiffList f) `mappend`mappend56,57
+instance Semigroup Semigroup (DiffList a)57,58
+  DiffList DiffList58,59
+toDiffList toDiffList59,60
+fromDiffList fromDiffList61,62
+gcdReverse gcdReverse64,65
+tellp tellp74,75
+gcdP gcdP77,78
+finalCountDown finalCountDown87,88
+finalCountDown' finalCountDown'93,94
+newtype State State99,100
+newtype State s a = State { runState runState99,100
+instance Functor Functor (State s)100,101
+  fmap fmap101,102
+instance Applicative Applicative (State s)104,105
+  pure pure105,106
+  (S(Statef)106,107
+instance Monad Monad (State s)110,111
+  return return111,112
+  (S(Statef)112,113
+type Stack Stack115,116
+pop pop116,117
+push push118,119
+stackManip stackManip121,122
+stackStuff stackStuff126,127
+pop' pop'134,135
+push' push'136,137
+stackManip' stackManip'138,139
+stackStuff' stackStuff'143,144
+moreStack moreStack151,152
+randomSt randomSt158,159
+threeCoins threeCoins160,161
+main main170,171
+
+./test/Spec.hs,15
+main main0,1
+
+./src/Lib.hs,42
+module LibLib0,1
+someFunc someFunc4,5
