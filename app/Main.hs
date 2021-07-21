@@ -181,7 +181,7 @@ binSmalls acc x
   | x > 9 = Nothing
   | otherwise = Just (acc + x)
 f = foldr (.) id [(+1), (*100), (+3)]
-f2 = foldl (.) id [(+3), (*100), (+1)]
+f2 = foldl (.) id [(+1), (*100), (+3)]
 
 --S.runState threeCoins (mkStdGen 33)
 
