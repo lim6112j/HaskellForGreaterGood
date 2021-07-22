@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# OPTIONS_GHC -Wno-deprecations#-}
 module Main where
 
 import Lib
@@ -7,7 +9,9 @@ import System.Random
 import Control.Monad.Error
 import Control.Applicative
 import Control.Monad
-import Data.List
+import Data.List (all)
+import Data.Ratio
+import Data.Bifunctor
 isBigGang :: Int -> (Bool, String)
 isBigGang = \x -> (x > 9, " is Big Gang")
 applyLog :: (a, String) -> (a -> (b, String)) -> (b, String)
@@ -227,6 +231,35 @@ f3 = (+1) . (*100)
 g :: (Monad m, Num c) => c -> m c
 g = (\x -> return (x + 1)) <=< (\x -> return (x*100))
 
+-- making Monad
+newtype Prob a = Prob { getProb :: [(a, Rational)]} deriving Show
+instance Functor Prob where
+  fmap f (Prob xs) = Prob $ map (first f) xs
+
+instance Applicative Prob where
+  pure x = Prob [(x, 1 % 1)]
+  (Prob [(f, _)]) <*> (Prob a) = Prob $ fmap (first f) a
+
+instance Monad Prob where
+  return x = Prob [(x, 1 % 1)]
+  m >>= f = flatten (fmap f m) -- join 을 사용하면 무한루프. monad증명에 monad 함수인 join을 사용하면 안되는 것.
+
+data Coin = Heads | Tails deriving (Show, Eq)
+coin :: Prob Coin
+coin = Prob [(Heads, 1%2), (Tails, 1%2)]
+loadedCoin :: Prob Coin
+loadedCoin = Prob [(Heads, 1%10), (Tails, 9%10)]
+
+flatten :: Prob (Prob a) -> Prob a
+flatten (Prob xs) = Prob $ concat $ map multAll xs
+    where multAll (Prob innerxs,p) = map (\(x,r) -> (x,p*r)) innerxs
+
+flipThree :: Prob Bool
+flipThree = do
+  a <- coin
+  b <- coin
+  c <- loadedCoin
+  return (all (==Tails) [a,b,c])
 
 main :: IO ()
 main = mapM_ putStrLn $ snd $ runWriter (gcd'' 8 3)
