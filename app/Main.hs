@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# OPTIONS_GHC -Wno-deprecations#-}
+{-# LANGUAGE TupleSections #-}
 module Main where
 
 import Lib
@@ -13,7 +14,8 @@ import Data.List (all)
 import Data.Ratio
 import Data.Bifunctor
 isBigGang :: Int -> (Bool, String)
-isBigGang = \x -> (x > 9, " is Big Gang")
+--isBigGang = \x -> (x > 9, " is Big Gang")
+isBigGang x = (x > 9, " is Big Gang")
 applyLog :: (a, String) -> (a -> (b, String)) -> (b, String)
 applyLog (x, log) f = let (y, newlog) = f x in (y, log ++ newlog)
 applyLogM :: Monoid m => (a, m) -> (a -> (b, m)) -> (b, m)
@@ -198,7 +200,9 @@ keepSmall x
       return False
 
 powerset :: [a] -> [[a]]
-powerset xs = filterM (\x->[True, False]) xs
+--powerset xs = filterM (\x->[True, False]) xs
+--powerset = filterM (\x->[True, False])
+powerset = filterM (const [True, False])
 binSmalls :: Int -> Int -> Maybe Int
 binSmalls acc x
   | x > 9 = Nothing
@@ -214,7 +218,8 @@ foldingFunction :: [Double] -> String -> Maybe [Double]
 foldingFunction (x:y:ys) "*" = return ((x * y):ys)
 foldingFunction (x:y:ys) "+" = return ((x + y):ys)
 foldingFunction (x:y:ys) "-" = return ((x - y):ys)
-foldingFunction xs numberString = liftM (:xs) (readMaybe numberString)
+--foldingFunction xs numberString = liftM (:xs) (readMaybe numberString)
+foldingFunction xs numberString = fmap (:xs) (readMaybe numberString)
 
 solveRPN :: String -> Maybe Double
 solveRPN st = do
@@ -242,7 +247,7 @@ instance Applicative Prob where
 
 instance Monad Prob where
   return x = Prob [(x, 1 % 1)]
-  m >>= f = flatten (fmap f m) -- join 을 사용하면 무한루프. monad증명에 monad 함수인 join을 사용하면 안되는 것.
+  m >>= f = flatten (fmap f m)
 
 data Coin = Heads | Tails deriving (Show, Eq)
 coin :: Prob Coin
@@ -250,9 +255,11 @@ coin = Prob [(Heads, 1%2), (Tails, 1%2)]
 loadedCoin :: Prob Coin
 loadedCoin = Prob [(Heads, 1%10), (Tails, 9%10)]
 
-flatten :: Prob (Prob a) -> Prob a
-flatten (Prob xs) = Prob $ concat $ map multAll xs
-    where multAll (Prob innerxs,p) = map (\(x,r) -> (x,p*r)) innerxs
+--flatten :: Prob (Prob a) -> Prob a
+--flatten (Prob xs) = Prob $ concat $ map multAll xs
+--    where multAll (Prob innerxs,p) = map (\(x,r) -> (x,p*r)) innerxs
+flatten (Prob xs) = Prob $ concatMap multAll xs
+    where multAll (Prob innerxs,p) = map (second (p *)) innerxs
 
 flipThree :: Prob Bool
 flipThree = do
