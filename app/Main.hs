@@ -6,6 +6,8 @@ import qualified Control.Monad.State as S
 import System.Random
 import Control.Monad.Error
 import Control.Applicative
+import Control.Monad
+import Data.List
 isBigGang :: Int -> (Bool, String)
 isBigGang = \x -> (x > 9, " is Big Gang")
 applyLog :: (a, String) -> (a -> (b, String)) -> (b, String)
@@ -27,11 +29,23 @@ instance (Monoid w) => Applicative (Writer w) where
 instance (Monoid w) => Monad (Writer w) where
   return x = Writer (x, mempty)
   (Writer (a, w)) >>= f = let (Writer (a', w')) = f a in Writer (a', w `mappend` w')
+
+newtype Writer' w a = Writer' { runWriter'::(w,a) }
+instance (Monoid w)  => Functor( Writer' w ) where
+  fmap f (Writer' (w, a)) = Writer' (w, f a)
+instance (Monoid w) => Applicative (Writer' w) where
+  pure x = Writer' (mempty, x)
+  Writer' (w, f) <*> Writer' (w', a) = Writer' (w `mappend` w', f a)
+instance (Monoid w) => Monad (Writer' w) where
+  return x = Writer' (mempty, x)
+  (Writer' (w, a)) >>= f = let (Writer' (w', a')) = f a in Writer'(w `mappend` w', a')
+
 logNumber :: Int -> Writer [String] Int
 logNumber x = Writer (x, ["Got Number: " ++ show x])
 tell :: [String] -> Writer [String] Int
 tell w = Writer (1, w)
-
+tell' :: [String] -> Writer' [String] Int
+tell' w = Writer' (w, 1)
 multWithLog :: Writer [String] Int
 multWithLog = do
   a <- logNumber 3
@@ -50,27 +64,34 @@ gcd'' a b
   | otherwise = do
       tell [show a ++ " mod " ++ show b ++ " = " ++ show (a `mod` b)]
       gcd'' b (a `mod` b)
-
+gcd''' :: Int -> Int -> Writer' [String] Int
+gcd''' a b
+  | b == 0 = do
+      tell' ["Finished with " ++ show a]
+      return a
+  | otherwise = do
+      tell' [show a ++ " mod " ++ show b ++ " = " ++ show (a `mod` b)]
+      gcd''' b (a `mod` b)
 -- difference list
 newtype DiffList a = DiffList { getDiffList :: [a] -> [a] }
 instance Monoid (DiffList a) where
   mempty = DiffList (\xs -> [] ++ xs)
   (DiffList f) `mappend` (DiffList g) = DiffList (\xs -> f (g xs))
 instance Semigroup (DiffList a) where
-  DiffList f <> DiffList g = DiffList (\xs -> f (g xs)) 
+  DiffList f <> DiffList g = DiffList (\xs -> f (g xs))
 toDiffList :: [a] -> DiffList a
 toDiffList xs = DiffList (xs++)
 fromDiffList :: DiffList a -> [a]
 fromDiffList (DiffList f) = f []
 --fromDiffList (toDiffList [1,2,3,4] `mappend` toDiffList [1,2,3])
-gcdReverse :: Int -> Int -> Writer [String] Int  
-gcdReverse a b  
-    | b == 0 = do  
-        tell ["Finished with " ++ show a]  
-        return a  
-    | otherwise = do  
-        result <- gcdReverse b (a `mod` b)  
-        tell [show a ++ " mod " ++ show b ++ " = " ++ show (a `mod` b)]  
+gcdReverse :: Int -> Int -> Writer [String] Int
+gcdReverse a b
+    | b == 0 = do
+        tell ["Finished with " ++ show a]
+        return a
+    | otherwise = do
+        result <- gcdReverse b (a `mod` b)
+        tell [show a ++ " mod " ++ show b ++ " = " ++ show (a `mod` b)]
         return result
 
 tellp :: DiffList String -> Writer (DiffList String) Int
@@ -153,9 +174,7 @@ stackStuff' = do
 moreStack :: S.State Stack ()
 moreStack = do
   a <- stackManip'
-  if a == 100
-    then stackStuff'
-    else return ()
+  when (a == 100) stackStuff'
 -- system random
 randomSt :: (RandomGen g, Random a) => S.State g a
 randomSt = S.state random
@@ -186,6 +205,28 @@ f2 = foldl (.) id [(+1), (*100), (+3)]
 --S.runState threeCoins (mkStdGen 33)
 
 -- Error handling
+-- rpn calculator
+foldingFunction :: [Double] -> String -> Maybe [Double]
+foldingFunction (x:y:ys) "*" = return ((x * y):ys)
+foldingFunction (x:y:ys) "+" = return ((x + y):ys)
+foldingFunction (x:y:ys) "-" = return ((x - y):ys)
+foldingFunction xs numberString = liftM (:xs) (readMaybe numberString)
+
+solveRPN :: String -> Maybe Double
+solveRPN st = do
+  [result] <- foldM foldingFunction [] (words st)
+  return result
+
+readMaybe :: (Read a) => String -> Maybe a
+readMaybe st = case reads st of [(x, "")] -> Just x
+                                _ -> Nothing
+
+-- composing monadic function
+f3 = (+1) . (*100)
+
+g :: (Monad m, Num c) => c -> m c
+g = (\x -> return (x + 1)) <=< (\x -> return (x*100))
+
 
 main :: IO ()
 main = mapM_ putStrLn $ snd $ runWriter (gcd'' 8 3)
